@@ -1,39 +1,42 @@
-import React from 'react';
+import { forwardRef } from "react";
 
-const Input = ({
-    label,
-    type = 'text',
-    id,
-    name,
-    value,
-    onChange,
-    placeholder,
-    error,
-    className = '',
-    required = false,
-    ...props
-}) => {
-    return (
-        <div className={`flex flex-col gap-1 ${className}`}>
-            {label && (
-                <label htmlFor={id || name} className="text-sm font-medium text-hkn-navy">
-                    {label} {required && <span className="text-hkn-red">*</span>}
-                </label>
-            )}
-            <input
-                type={type}
-                id={id || name}
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className={`input-field ${error ? 'border-hkn-red focus:border-hkn-red focus:ring-red-100' : ''}`}
-                required={required}
-                {...props}
-            />
-            {error && <span className="text-xs text-hkn-red">{error}</span>}
-        </div>
-    );
-};
+const Input = forwardRef(({ 
+  label, 
+  error, 
+  icon: Icon, 
+  className = "", 
+  containerClassName = "",
+  type = "text",
+  ...props 
+}, ref) => {
+  return (
+    <div className={`input-group ${containerClassName}`}>
+      <div className="relative">
+        <input
+          ref={ref}
+          type={type}
+          className={`input-field ${error ? "border-red-500 focus:border-red-500" : ""} ${className}`}
+          placeholder=" "
+          {...props}
+        />
+        {label && <label className="input-label">{label}</label>}
+        
+        {Icon && (
+            <div className="absolute right-3 top-3 text-slate-400">
+                <Icon size={20} />
+            </div>
+        )}
+      </div>
+      
+      {error && (
+        <p className="text-red-500 text-xs mt-1 ml-1 font-medium animate-fade-in">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+});
+
+Input.displayName = "Input";
 
 export default Input;

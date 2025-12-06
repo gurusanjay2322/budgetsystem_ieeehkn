@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import useAxios from "../../hooks/useAxios";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Modal from "../../components/Modal";
+import { Plus, Search, Filter, Edit2, Trash2, Calendar, DollarSign, Wallet } from "lucide-react";
 
 export default function Events() {
   const { request, loading } = useAxios();
@@ -7,6 +11,9 @@ export default function Events() {
   const [events, setEvents] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const [form, setForm] = useState({
     name: "",
     allocatedAmount: "",
@@ -22,10 +29,7 @@ export default function Events() {
 
   const loadBudgets = async () => {
     try {
-      const res = await request({
-        url: "/api/budgets",
-        method: "GET",
-      });
+      const res = await request({ url: "/api/budgets", method: "GET" });
       setBudgets(res);
     } catch (err) {
       console.error("Failed to load budgets", err);
@@ -34,10 +38,7 @@ export default function Events() {
 
   const loadEvents = async () => {
     try {
-      const res = await request({
-        url: "/api/events",
-        method: "GET",
-      });
+      const res = await request({ url: "/api/events", method: "GET" });
       setEvents(res);
     } catch (err) {
       console.error("Failed to load events", err);
@@ -46,7 +47,6 @@ export default function Events() {
 
   const filterByBudget = async (budgetId) => {
     setSelectedBudget(budgetId);
-
     if (!budgetId) return loadEvents();
 
     try {
@@ -60,9 +60,19 @@ export default function Events() {
     }
   };
 
+  const handleOpenModal = (event = null) => {
+    if (event) {
+      setEditingEvent(event);
+      setForm({ name: event.name, allocatedAmount: event.allocatedAmount });
+    } else {
+      setEditingEvent(null);
+      setForm({ name: "", allocatedAmount: "" });
+    }
+    setIsModalOpen(true);
+  };
+
   const submitEvent = async (e) => {
     e.preventDefault();
-
     const payload = {
       name: form.name,
       allocatedAmount: Number(form.allocatedAmount),
@@ -70,23 +80,21 @@ export default function Events() {
 
     try {
       if (editingEvent) {
-        // EDIT EVENT
         await request({
           url: `/api/events/${editingEvent.id}`,
           method: "PUT",
           data: payload,
         });
       } else {
-        // CREATE EVENT
         await request({
           url: "/api/events",
           method: "POST",
           data: payload,
         });
       }
-
+      setIsModalOpen(false);
       resetForm();
-      loadEvents();
+      loadEvents(); // Reload to see changes
     } catch (err) {
       console.error("Event save failed", err);
     }
@@ -94,132 +102,157 @@ export default function Events() {
 
   const deleteEvent = async (id) => {
     if (!confirm("Delete this event?")) return;
-
     try {
-      await request({
-        url: `/api/events/${id}`,
-        method: "DELETE",
-      });
+      await request({ url: `/api/events/${id}`, method: "DELETE" });
       loadEvents();
     } catch (err) {
       console.error("Delete failed", err);
     }
   };
 
-  const startEdit = (event) => {
-    setEditingEvent(event);
-    setForm({
-      name: event.name,
-      allocatedAmount: event.allocatedAmount,
-    });
-  };
-
   const resetForm = () => {
     setEditingEvent(null);
-    setForm({
-      name: "",
-      allocatedAmount: "",
-    });
+    setForm({ name: "", allocatedAmount: "" });
   };
 
+  const filteredEvents = events.filter(ev => 
+    ev.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between mb-6">
-        <h1 className="text-3xl font-bold">Events</h1>
+    <div className="space-y-6">
+      
+      {/* Header Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <div className="relative group">
+            <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-hkn-steel-blue transition-colors" size={20} />
+            <input 
+                type="text" 
+                placeholder="Search events..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-hkn-pale-blue/50 w-full md:w-64 transition-all shadow-sm"
+            />
+        </div>
 
-        <select
-          value={selectedBudget}
-          onChange={(e) => filterByBudget(e.target.value)}
-          className="border px-3 py-2 rounded-lg"
-        >
-          <option value="">All Budgets</option>
-          {budgets.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name} — {b.academicYear}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* FORM */}
-      <form
-        onSubmit={submitEvent}
-        className="bg-white p-5 rounded-xl shadow mb-8 grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        <input
-          type="text"
-          placeholder="Event Name"
-          className="border rounded-lg px-3 py-2"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-
-        <input
-          type="number"
-          placeholder="Allocated Amount"
-          className="border rounded-lg px-3 py-2"
-          value={form.allocatedAmount}
-          onChange={(e) =>
-            setForm({ ...form, allocatedAmount: e.target.value })
-          }
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition"
-        >
-          {editingEvent ? "Update Event" : "Add Event"}
-        </button>
-
-        {editingEvent && (
-          <button
-            type="button"
-            className="bg-gray-500 text-white rounded-lg px-4 py-2 hover:bg-gray-600 transition"
-            onClick={resetForm}
-          >
-            Cancel
-          </button>
-        )}
-      </form>
-
-      {/* EVENTS LIST */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {events.map((ev) => (
-          <div
-            key={ev.id}
-            className="bg-white p-5 rounded-xl shadow border hover:shadow-lg transition"
-          >
-            <h2 className="text-xl font-semibold mb-2">{ev.name}</h2>
-
-            <p className="text-gray-700">
-              <strong>Amount:</strong> ₹{ev.allocatedAmount}
-            </p>
-
-            <p className="text-gray-700">
-              <strong>Budget:</strong> {ev.budget?.name} (
-              {ev.budget?.academicYear})
-            </p>
-
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => startEdit(ev)}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={() => deleteEvent(ev.id)}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-              >
-                Delete
-              </button>
+        <div className="flex items-center gap-3">
+            <div className="relative">
+                <Filter className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <select
+                    value={selectedBudget}
+                    onChange={(e) => filterByBudget(e.target.value)}
+                    className="pl-10 pr-8 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-hkn-pale-blue/50 text-slate-600 appearance-none cursor-pointer shadow-sm hover:border-slate-300 transition-colors"
+                >
+                    <option value="">All Budgets</option>
+                    {budgets.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                </select>
             </div>
-          </div>
-        ))}
+
+            <Button onClick={() => handleOpenModal()} icon={Plus} className="shadow-lg shadow-blue-500/30">
+                New Event
+            </Button>
+        </div>
       </div>
 
-      {loading && <p className="text-center mt-4">Loading…</p>}
+      {/* Events Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredEvents.map((ev, index) => (
+            <div 
+                key={ev.id} 
+                className="card group hover:-translate-y-1 hover:shadow-xl transition-all duration-300 animate-slide-up"
+                style={{ animationDelay: `${index * 50}ms` }}
+            >
+                <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Calendar size={24} />
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button 
+                                onClick={() => handleOpenModal(ev)}
+                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                                <Edit2 size={16} />
+                            </button>
+                            <button 
+                                onClick={() => deleteEvent(ev.id)}
+                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-slate-800 mb-2 font-display">{ev.name}</h3>
+                    
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span className="text-sm text-slate-500 font-medium">Allocated</span>
+                            <span className="text-lg font-bold text-slate-900">₹{ev.allocatedAmount.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Wallet size={14} />
+                            <span>{ev.budget?.name}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+        ))}
+        
+        {filteredEvents.length === 0 && (
+            <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                <Calendar className="mx-auto mb-3 opacity-50" size={48} />
+                <p>No events found</p>
+            </div>
+        )}
+      </div>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingEvent ? "Edit Event" : "Create New Event"}
+        footer={
+            <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button onClick={submitEvent} isLoading={loading}>
+                    {editingEvent ? "Save Changes" : "Create Event"}
+                </Button>
+            </div>
+        }
+      >
+        <form onSubmit={submitEvent} className="space-y-6">
+            <Input
+                label="Event Name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Annual Tech Symposium"
+                autoFocus
+            />
+            
+            <Input
+                label="Allocated Amount (₹)"
+                type="number"
+                value={form.allocatedAmount}
+                onChange={(e) => setForm({ ...form, allocatedAmount: e.target.value })}
+                icon={DollarSign}
+                placeholder="0.00"
+            />
+            
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-sm text-blue-700 flex gap-2">
+                    <span className="text-xl">💡</span>
+                    Allocating funds will automatically deduct from the selected budget's remaining balance.
+                </p>
+            </div>
+        </form>
+      </Modal>
+
     </div>
   );
 }
