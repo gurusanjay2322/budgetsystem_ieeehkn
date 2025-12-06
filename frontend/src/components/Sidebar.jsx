@@ -20,12 +20,11 @@ export default function Sidebar() {
   };
 
   const menu = [
-    { name: "Dashboard", to: "/admin", icon: LayoutDashboard, roles: ["ADMIN"] },
-    { name: "Dashboard", to: "/treasurer", icon: LayoutDashboard, roles: ["TREASURER"] },
-    { name: "Dashboard", to: "/member", icon: LayoutDashboard, roles: ["MEMBER"] },
-    { name: "Events", to: "/admin/events", icon: Calendar, roles: ["ADMIN", "TREASURER", "MEMBER"] },
-    { name: "Budgets", to: "/admin/budgets", icon: Wallet, roles: ["ADMIN", "TREASURER", "MEMBER"] },
-    { name: "Reports", to: "/admin/reports", icon: FileText, roles: ["ADMIN", "TREASURER"] },
+    { name: "Dashboard", to: role === "ADMIN" ? "/admin" : role === "TREASURER" ? "/treasurer" : "/member", icon: LayoutDashboard, roles: ["ADMIN", "TREASURER", "MEMBER"] },
+    { name: "Transactions", to: "/treasurer/transactions", icon: Wallet, roles: ["TREASURER"] }, 
+    { name: "Events", to: role === "ADMIN" ? "/admin/events" : role === "TREASURER" ? "/treasurer/events" : "/member/events", icon: Calendar, roles: ["ADMIN", "TREASURER", "MEMBER"] },
+    { name: "Budgets", to: role === "ADMIN" ? "/admin/budgets" : "/treasurer/budgets", icon: Wallet, roles: ["ADMIN", "TREASURER"] },
+    { name: "Reports", to: role === "ADMIN" ? "/admin/reports" : "/treasurer/reports", icon: FileText, roles: ["ADMIN", "TREASURER"] },
     { name: "Users", to: "/admin/users", icon: Users, roles: ["ADMIN"] },
   ];
 

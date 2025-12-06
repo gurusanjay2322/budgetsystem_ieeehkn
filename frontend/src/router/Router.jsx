@@ -68,6 +68,9 @@ export default function Router() {
           <Route path="/treasurer/transactions" element={<Transactions />} />
           <Route path="/treasurer/reports" element={<Reports />} />
           <Route path="/treasurer/deadlines" element={<Deadlines />} />
+          {/* Reuse Admin components for Treasurer where applicable */}
+          <Route path="/treasurer/events" element={<Events />} />
+          <Route path="/treasurer/budgets" element={<Budgets />} />
         </Route>
 
         {/* MEMBER SECTION (optional) */}
@@ -97,8 +100,6 @@ export default function Router() {
               </RequireRole>
             }
           />
-
-          <Route path="/member/events" element={<Events />} />
         </Route>
 
         {/* SHARED ROUTES */}
