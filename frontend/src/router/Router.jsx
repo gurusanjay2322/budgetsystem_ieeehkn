@@ -83,23 +83,8 @@ export default function Router() {
             </ProtectedRoute>
           }
         >
-          <Route
-            path="/member"
-            element={
-              <RequireRole allowed={["MEMBER"]}>
-                <MemberDashboard />
-              </RequireRole>
-            }
-          />
-
-          <Route
-            path="/member/events"
-            element={
-              <RequireRole allowed={["MEMBER"]}>
-                <MemberEvents />
-              </RequireRole>
-            }
-          />
+          <Route path="/member" element={<MemberDashboard />} />
+          <Route path="/member/events" element={<MemberEvents />} />
         </Route>
 
         {/* SHARED ROUTES */}
@@ -114,6 +99,8 @@ export default function Router() {
         >
            <Route path="/deadlines" element={<Deadlines />} />
         </Route>
+
+        <Route path="*" element={<div className="p-10 text-center"><h1>404 - Page Not Found</h1><p>The route {window.location.pathname} does not exist.</p></div>} />
       </Routes>
     </BrowserRouter>
   );
